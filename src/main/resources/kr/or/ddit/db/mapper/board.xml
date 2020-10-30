@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+  PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+  "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="board">
+  <select id="getBoardList" resultType="BoardVO">
+    SELECT * 
+      FROM board
+  </select>
+  
+  <insert id="createBoard" parameterType="String">
+  	INSERT INTO board
+  	VALUES (BOARD_SEQ.NEXTVAL, #{board_name}, 1)
+  </insert>
+  
+  <update id="changeBoard" parameterType="BoardVO">
+  	UPDATE board
+  	   SET board_name = #{board_name},
+  	       status = #{status}
+  	 WHERE board_seq = #{board_seq}
+  </update>
+  
+   <select id="getPostList"  parameterType="int"  resultType="PostVO">
+    SELECT * 
+      FROM post
+     WHERE board_seq = #{board_seq}
+  </select>
+  
+  <select id="selectBoardPageList" parameterType="hashmap" resultType="PostVO">
+   	  SELECT * 
+        FROM 
+      		(SELECT ROWNUM rn, a.*
+      		   FROM 
+      		        (SELECT post_seq,
+            				board_seq,
+            				userid,
+            				LEVEL,
+            				LPAD(' ',(LEVEL-1)*4 )||post_title post_title,
+            				p_post_seq,
+            				post_content,
+            				post_date,
+            				flag_delete
+       				   FROM (SELECT * FROM post WHERE board_seq = #{board_seq})
+      				  START WITH p_post_seq = 0
+    				CONNECT BY PRIOR post_seq = p_post_seq
+    				  ORDER SIBLINGS BY post_seq DESC ) a)
+       WHERE rn BETWEEN (#{page} - 1 ) * #{pageSize} + 1 AND #{page} * #{pageSize}
+  </select>
+  
+  <select id="selectPostTotalCnt" parameterType="int"   resultType="int">
+    SELECT COUNT(*) 
+      FROM post
+     WHERE board_seq = #{board_seq}
+  </select>
+  
+  <select id="getBoardName" parameterType="int" resultType="String">
+  	SELECT board_name
+  	  FROM board
+  	 WHERE board_seq = #{board_seq}
+  </select>
+  
+  <insert id="insertPost" parameterType="PostVO">
+  	INSERT INTO post(POST_SEQ, BOARD_SEQ, USERID, POST_TITLE, P_POST_SEQ, POST_CONTENT, POST_DATE, FLAG_DELETE)
+	VALUES(post_seq.NEXTVAL, #{board_seq}, #{userid}, #{post_title}, #{p_post_seq}, #{post_content}, SYSDATE, 1)
+  	<selectKey keyProperty="post_seq" resultType="int">
+  		SELECT POST_SEQ.CURRVAL FROM dual	
+  	</selectKey>
+  </insert>
+  
+  <insert id="insertAtch" parameterType="AtchVO">
+  	INSERT INTO atch
+  	VALUES (atch_seq.NEXTVAL, #{post_seq}, #{atch_realPath}, #{atch_uploadName})
+  </insert>
+  
+  <select id="getPost" parameterType="int" resultType="PostVO">
+  	SELECT *
+  	  FROM post
+  	 WHERE post_seq = #{post_seq}
+  </select>
+  
+  <select id="getAtchList" parameterType="int" resultType="AtchVO">
+  	SELECT *
+  	  FROM atch
+  	 WHERE post_seq = #{post_seq}
+  </select>
+  <select id="getAtch" parameterType="int" resultType="AtchVO">
+  	SELECT *
+  	  FROM atch
+  	 WHERE atch_seq = #{atch_seq}
+  </select>
+  <update id="modifyPost" parameterType="PostVO">
+  	UPDATE post
+  	   SET post_title = #{post_title},
+  	   	   post_content = #{post_content}, 
+  	   	   flag_delete = #{flag_delete}
+  	 WHERE post_seq = #{post_seq} 
+  </update>
+  
+  <delete id="deleteAtch" parameterType="int">
+  	DELETE 
+  	  FROM atch
+  	 WHERE atch_seq = #{atch_seq}
+  </delete>
+  
+  <select id="getAtchSeqList" parameterType="int" resultType="int">
+  	SELECT atch_seq
+  	  FROM atch
+  	 WHERE post_seq = #{post_seq}
+  </select>
+  
+  <select id="getReplyList" parameterType="int" resultType="ReplyVO">
+  	SELECT *
+  	  FROM reply
+  	 WHERE post_seq = #{post_seq}
+  </select>
+  
+  <insert id="insertReply" parameterType="ReplyVO">
+  	INSERT INTO reply
+ 	VALUES (REPLY_SEQ.NEXTVAL, #{userid}, #{post_seq}, #{reply_content}, SYSDATE, 1)
+  </insert>
+  
+  <delete id="deleteReply" parameterType="int">
+  	UPDATE reply
+  	   SET flag_delete = 0
+  	 WHERE reply_seq = #{reply_seq}
+  </delete>
+</mapper>
